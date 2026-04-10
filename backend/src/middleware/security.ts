@@ -6,9 +6,12 @@ import { env } from "../config/env.js";
 
 export const registerSecurityMiddleware = (app: Express) => {
   app.use(helmet());
+  console.log("CORS Allowed Origins:", env.CLIENT_ORIGIN);
   app.use(
     cors({
-      origin: env.CLIENT_ORIGIN,
+      origin: env.CLIENT_ORIGIN.includes(",") 
+        ? env.CLIENT_ORIGIN.split(",") 
+        : env.CLIENT_ORIGIN,
       credentials: true,
     }),
   );

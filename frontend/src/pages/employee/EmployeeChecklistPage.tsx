@@ -137,8 +137,8 @@ export const EmployeeChecklistPage = () => {
                 </div>
               </div>
               <StatusBadge
-                variant={task.status === "completed" ? "completed" : task.status === "in_progress" ? "active" : "pending"}
-                label={task.status === "in_progress" ? "In Progress" : task.status}
+                variant={task.status === "completed" ? "completed" : task.status === "in_progress" ? "in_progress" : "pending"}
+                label={task.status === "in_progress" ? undefined : task.status}
               />
               <button type="button" onClick={() => setExpandedId(expandedId === task.id ? null : task.id)} className="p-1 text-slate-400 hover:text-slate-600">
                 {expandedId === task.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}

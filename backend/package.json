@@ -4,10 +4,13 @@
   "description": "Employee onboarding backend",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "kill-port 4000 && tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "firestore:indexes": "npx firebase-tools deploy --only firestore:indexes --config ../firebase.json --project jrguide-7d4ed"
   },
   "keywords": [],
   "author": "",
@@ -36,7 +39,9 @@
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.5.2",
+    "kill-port": "^2.0.1",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^2.1.8"
   }
 }

@@ -93,7 +93,7 @@ export const EmployeeDocumentsPage = () => {
               {doc.fileName && <p className="text-xs text-slate-400 flex items-center gap-1"><FileText size={10} /> {doc.fileName}</p>}
             </div>
             <div className="flex items-center gap-2">
-              {doc.required && <StatusBadge variant="warning" label="Required" />}
+              {doc.required && <StatusBadge variant="required" label="Required" />}
               <StatusBadge
                 variant={doc.status === "verified" ? "completed" : doc.status === "uploaded" ? "active" : doc.status === "rejected" ? "rejected" : "pending"}
                 label={doc.status}

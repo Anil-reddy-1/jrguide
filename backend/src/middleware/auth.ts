@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { firebaseAuth } from "../config/firebase.js";
+import { firestore, firebaseAuth } from "../config/firebase.js";
 import { env } from "../config/env.js";
 import { UnauthorizedError } from "../utils/errors.js";
 
@@ -27,19 +27,39 @@ export const authMiddleware = async (req: Request, _res: Response, next: NextFun
 
     try {
       const decoded = await firebaseAuth.verifyIdToken(token);
+      let resolvedRole = decoded.role as "employee" | "hr" | "admin" | undefined;
+
+      if (!resolvedRole) {
+        const doc = await firestore.collection("users").doc(decoded.uid).get();
+        const firestoreRole = doc.data()?.role;
+        if (firestoreRole === "employee" || firestoreRole === "hr" || firestoreRole === "admin") {
+          resolvedRole = firestoreRole;
+        }
+      }
+
       req.user = {
         uid: decoded.uid,
         email: decoded.email,
-        role: (decoded.role as "employee" | "hr" | "admin") ?? "employee",
+        role: resolvedRole ?? "employee",
         firebaseToken: decoded,
       };
       return next();
     } catch {
       const decodedJwt = jwt.verify(token, env.JWT_SECRET) as TokenPayload;
+      let resolvedRole = decodedJwt.role;
+
+      if (!resolvedRole) {
+        const doc = await firestore.collection("users").doc(decodedJwt.uid).get();
+        const firestoreRole = doc.data()?.role;
+        if (firestoreRole === "employee" || firestoreRole === "hr" || firestoreRole === "admin") {
+          resolvedRole = firestoreRole;
+        }
+      }
+
       req.user = {
         uid: decodedJwt.uid,
         email: decodedJwt.email,
-        role: decodedJwt.role ?? "employee",
+        role: resolvedRole ?? "employee",
       };
       return next();
     }

@@ -20,12 +20,21 @@ import { HrTemplatesPage } from "./pages/hr/HrTemplatesPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 function App() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/select-role" element={user ? <RoleSelectPage /> : <Navigate to="/login" replace />} />
+      <Route
+        path="/select-role"
+        element={
+          loading ? null : user ? (
+            <RoleSelectPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
 
       <Route
         path="/employee"

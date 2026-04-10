@@ -58,7 +58,7 @@ export const HrEmailAutomationPage = () => {
       </div>
 
       {/* Test Email Modal */}
-      <Modal isOpen={testModal} onClose={() => setTestModal(false)} title="Send Test Email">
+      <Modal open={testModal} onClose={() => setTestModal(false)} title="Send Test Email">
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Recipient Email</label>

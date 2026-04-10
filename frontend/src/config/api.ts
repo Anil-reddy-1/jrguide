@@ -12,16 +12,26 @@ export const apiClient = async <T = unknown>(path: string, options: ApiOptions =
 
   const finalHeaders: Record<string, string> = { ...headers };
 
-  // Try to get Firebase token
   try {
+    // Try to get Firebase token
     const { firebaseAuthClient } = await import("../config/firebase");
     const currentUser = firebaseAuthClient.currentUser;
     if (currentUser) {
       const token = await currentUser.getIdToken();
       finalHeaders["Authorization"] = `Bearer ${token}`;
+    } else {
+      // Check for demo token
+      const demoToken = sessionStorage.getItem("demo_token");
+      if (demoToken) {
+        finalHeaders["Authorization"] = `Bearer ${demoToken}`;
+      }
     }
   } catch {
-    // Not logged in via Firebase — demo mode
+    // Demo token might also be here if import fails
+    const demoToken = sessionStorage.getItem("demo_token");
+    if (demoToken) {
+      finalHeaders["Authorization"] = `Bearer ${demoToken}`;
+    }
   }
 
   const fetchOptions: RequestInit = {

@@ -115,7 +115,7 @@ export const HrFaqManagerPage = () => {
         {filtered.length === 0 && <p className="py-12 text-center text-sm text-slate-400">No FAQs found.</p>}
       </div>
 
-      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditFaq(null); }} title={editFaq ? "Edit FAQ" : "Create FAQ"}>
+      <Modal open={showModal} onClose={() => { setShowModal(false); setEditFaq(null); }} title={editFaq ? "Edit FAQ" : "Create FAQ"}>
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Question</label>

@@ -95,7 +95,7 @@ export const HrEmployeesPage = () => {
       </div>
 
       {/* Detail Modal */}
-      <Modal isOpen={!!selectedEmployee} onClose={() => setSelectedEmployee(null)} title={selectedEmployee?.displayName ?? ""}>
+      <Modal open={!!selectedEmployee} onClose={() => setSelectedEmployee(null)} title={selectedEmployee?.displayName ?? ""}>
         {selectedEmployee && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">

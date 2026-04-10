@@ -36,22 +36,70 @@ const USERS = [
   { id: "demo-hr-001", email: "james.robertson@company.com", displayName: "James Robertson", role: "hr", team: "Human Resources", joinDate: "2024-01-15", status: "completed" },
 ];
 
-/* ─── Tasks per employee ────────────────────────────────────────── */
-function buildTasks(userId: string, joinDate: string) {
-  const jd = new Date(joinDate);
-  const day = (n: number) => { const d = new Date(jd); d.setDate(d.getDate() + n); return d; };
+const ONBOARDING_TEMPLATES = [
+  {
+    id: "tpl-general",
+    name: "General Onboarding",
+    description: "Standard onboarding template for all departments",
+    active: true,
+    tasks: [
+      { title: "Complete your profile", description: "Fill in personal details and emergency contacts in the HRMS portal.", category: "Setup", dayOffset: 0, priority: "high" },
+      { title: "Read company handbook", description: "Review company policies, values, and code of conduct.", category: "Orientation", dayOffset: 1, priority: "medium" },
+      { title: "Set up payroll details", description: "Enter bank account information and submit tax declaration.", category: "Finance", dayOffset: 2, priority: "high" },
+      { title: "Complete IT security training", description: "Mandatory cybersecurity awareness training module.", category: "Training", dayOffset: 2, priority: "high" },
+      { title: "Schedule 1-on-1 with manager", description: "Book a 30-minute introductory meeting with your reporting manager.", category: "Team", dayOffset: 4, priority: "medium" },
+      { title: "Submit all required documents", description: "Upload government ID, address proof, tax forms, and certificates.", category: "Documents", dayOffset: 6, priority: "high" },
+    ],
+  },
+  {
+    id: "tpl-engineering",
+    name: "Engineering Onboarding",
+    description: "Technical onboarding for software engineers",
+    active: true,
+    tasks: [
+      { title: "Set up VPN and development tools", description: "Install VPN client, IDE, and project-specific development tools.", category: "IT Setup", dayOffset: 0, priority: "high" },
+      { title: "Clone repositories and build", description: "Checkout core repositories and ensure the local build is passing.", category: "Dev", dayOffset: 1, priority: "high" },
+      { title: "Review system architecture", description: "Go through the documentation for microservices and cloud infrastructure.", category: "Knowledge", dayOffset: 3, priority: "medium" },
+      { title: "Submit your first pull request", description: "Pick a 'good first issue' from Jira and submit a bug fix or minor improvement.", category: "Dev", dayOffset: 5, priority: "medium" },
+      { title: "Attend technical architecture review", description: "Participate in the weekly sync with the system architects.", category: "Team", dayOffset: 10, priority: "low" },
+    ],
+  },
+  {
+    id: "tpl-sales",
+    name: "Sales Onboarding",
+    description: "Onboarding for account managers and sales reps",
+    active: true,
+    tasks: [
+      { title: "Product demo walkthrough", description: "Shadow a senior sales rep during a live product demonstration.", category: "Product", dayOffset: 2, priority: "high" },
+      { title: "CRM training", description: "Learn how to manage leads and deals in Salesforce.", category: "Tools", dayOffset: 3, priority: "high" },
+      { title: "Review sales playbook", description: "Study our target personas, value propositions, and objection handling.", category: "Strategy", dayOffset: 5, priority: "medium" },
+      { title: "Make your first outreach", description: "Draft and send 5 personalized outreach emails under supervisor guidance.", category: "Execution", dayOffset: 7, priority: "medium" },
+    ],
+  },
+];
 
-  return [
-    { employeeId: userId, title: "Complete your profile", description: "Fill in personal details and emergency contacts in the HRMS portal.", category: "Setup", dueDate: day(0), status: "completed", dayLabel: "Day 1", completedAt: day(0) },
-    { employeeId: userId, title: "Read company handbook", description: "Review company policies, values, and code of conduct.", category: "Orientation", dueDate: day(1), status: "in_progress", dayLabel: "Day 2", completedAt: null },
-    { employeeId: userId, title: "Set up payroll details", description: "Enter bank account information and submit tax declaration.", category: "Finance", dueDate: day(2), status: "pending", dayLabel: "Day 3", completedAt: null },
-    { employeeId: userId, title: "Complete IT security training", description: "Mandatory cybersecurity awareness training module.", category: "Training", dueDate: day(2), status: "pending", dayLabel: "Day 3", completedAt: null },
-    { employeeId: userId, title: "Set up VPN and development tools", description: "Install VPN client, IDE, and project tools.", category: "IT Setup", dueDate: day(3), status: "pending", dayLabel: "Day 4", completedAt: null },
-    { employeeId: userId, title: "Schedule 1-on-1 with manager", description: "Book a 30-minute introductory meeting with your reporting manager.", category: "Team", dueDate: day(4), status: "pending", dayLabel: "Day 5", completedAt: null },
-    { employeeId: userId, title: "Complete compliance training", description: "Anti-harassment, data privacy, and workplace safety modules.", category: "Training", dueDate: day(6), status: "pending", dayLabel: "Week 1", completedAt: null },
-    { employeeId: userId, title: "Submit all required documents", description: "Upload government ID, address proof, tax forms, and certificates.", category: "Documents", dueDate: day(6), status: "pending", dayLabel: "Week 1", completedAt: null },
-  ];
-}
+const addDays = (baseDate: Date, days: number) => {
+  const result = new Date(baseDate);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+const buildTasksFromTemplate = (employeeId: string, joinDate: string, template: (typeof ONBOARDING_TEMPLATES)[number]) => {
+  const baseDate = new Date(joinDate);
+
+  return template.tasks.map((task) => ({
+    employeeId,
+    title: task.title,
+    description: task.description,
+    category: task.category,
+    dueDate: addDays(baseDate, task.dayOffset),
+    status: "pending",
+    dayLabel: task.dayOffset === 0 ? "Day 1" : `Day ${task.dayOffset + 1}`,
+    priority: task.priority,
+    templateId: template.id,
+    completedAt: null,
+  }));
+};
 
 /* ─── Required Documents ────────────────────────────────────────── */
 function buildDocuments(userId: string) {
@@ -114,7 +162,7 @@ async function main() {
   console.log("🌱 Seeding Firestore...\n");
 
   // Clear existing data
-  for (const col of ["users", "employeeTasks", "documents", "faqs", "contacts", "notifications"]) {
+  for (const col of ["users", "onboardingTemplates", "templateAssignments", "employeeTasks", "documents", "faqs", "contacts", "notifications"]) {
     const cleared = await clearCollection(col);
     if (cleared > 0) console.log(`   🗑️  Cleared ${cleared} docs from ${col}`);
   }
@@ -128,18 +176,55 @@ async function main() {
   }
   console.log(`✅ Users: ${USERS.length} seeded`);
 
-  // Tasks (for first employee — demo)
-  const demoEmployee = USERS[0];
-  const tasks = buildTasks(demoEmployee.id, demoEmployee.joinDate);
-  for (const task of tasks) {
-    await db.collection("employeeTasks").add({
-      ...task,
+  // Templates
+  for (const template of ONBOARDING_TEMPLATES) {
+    await db.collection("onboardingTemplates").doc(template.id).set({
+      ...template,
+      createdBy: "demo-hr-001",
       createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
   }
-  console.log(`✅ Tasks: ${tasks.length} seeded for ${demoEmployee.displayName}`);
+  console.log(`✅ Templates: ${ONBOARDING_TEMPLATES.length} seeded`);
+
+  // Assign templates and generate tasks for all employee users
+  const defaultTemplate = ONBOARDING_TEMPLATES[0];
+  const employees = USERS.filter((u) => u.role === "employee");
+  let seededTaskCount = 0;
+
+  for (const employee of employees) {
+    const tasks = buildTasksFromTemplate(employee.id, employee.joinDate, defaultTemplate);
+    const generatedTaskIds: string[] = [];
+
+    for (const task of tasks) {
+      const taskRef = db.collection("employeeTasks").doc();
+      generatedTaskIds.push(taskRef.id);
+      await taskRef.set({
+        ...task,
+        templateAssignmentId: `${employee.id}_${defaultTemplate.id}`,
+        generatedAt: FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      seededTaskCount += 1;
+    }
+
+    await db.collection("templateAssignments").doc(`${employee.id}_${defaultTemplate.id}`).set({
+      employeeId: employee.id,
+      templateId: defaultTemplate.id,
+      templateName: defaultTemplate.name,
+      assignedBy: "demo-hr-001",
+      assignedAt: FieldValue.serverTimestamp(),
+      status: "generated",
+      generatedTaskIds,
+      generatedCount: generatedTaskIds.length,
+      startDate: employee.joinDate,
+    });
+  }
+  console.log(`✅ Tasks: ${seededTaskCount} generated from templates for ${employees.length} employees`);
 
   // Documents (for first employee)
+  const demoEmployee = USERS[0];
   const docs = buildDocuments(demoEmployee.id);
   for (const doc of docs) {
     await db.collection("documents").add({

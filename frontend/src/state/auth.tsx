@@ -1,11 +1,16 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
-  type User,
 } from "firebase/auth";
 import { firebaseAuthClient } from "../config/firebase";
 import { apiClient } from "../config/api";
@@ -45,47 +50,63 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Listen for Firebase auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuthClient, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Try to fetch the user's profile from the backend
-        try {
-          const token = await firebaseUser.getIdToken();
-          const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/employees/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+    const unsubscribe = onAuthStateChanged(
+      firebaseAuthClient,
+      async (firebaseUser) => {
+        if (firebaseUser) {
+          // Try to fetch the user's profile from the backend
+          try {
+            const token = await firebaseUser.getIdToken();
+            const res = await fetch(
+              `${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/employees/me`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              },
+            );
 
-          if (res.ok) {
-            const body = await res.json();
-            const profile = body.data;
+            if (res.ok) {
+              const body = await res.json();
+              const profile = body.data;
+              setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email ?? "",
+                displayName:
+                  profile?.displayName ??
+                  firebaseUser.displayName ??
+                  firebaseUser.email?.split("@")[0] ??
+                  "",
+                role: profile?.role ?? null,
+              });
+            } else {
+              // User exists in Firebase but not in our Firestore — needs role selection
+              setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email ?? "",
+                displayName:
+                  firebaseUser.displayName ??
+                  firebaseUser.email?.split("@")[0] ??
+                  "",
+                role: null,
+              });
+            }
+          } catch {
+            // Backend unavailable — still let the user proceed to role selection
             setUser({
               uid: firebaseUser.uid,
               email: firebaseUser.email ?? "",
-              displayName: profile?.displayName ?? firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "",
-              role: profile?.role ?? null,
-            });
-          } else {
-            // User exists in Firebase but not in our Firestore — needs role selection
-            setUser({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email ?? "",
-              displayName: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "",
+              displayName:
+                firebaseUser.displayName ??
+                firebaseUser.email?.split("@")[0] ??
+                "",
               role: null,
             });
           }
-        } catch {
-          // Backend unavailable — still let the user proceed to role selection
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email ?? "",
-            displayName: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "",
-            role: null,
-          });
+        } else if (!isDemo) {
+          setUser(null);
         }
-      } else if (!isDemo) {
-        setUser(null);
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      },
+    );
 
     return () => unsubscribe();
   }, [isDemo]);
@@ -102,36 +123,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signInWithPopup(firebaseAuthClient, provider);
   };
 
-  const loginAsDemo = (role: AppRole) => {
-    setIsDemo(true);
-    setUser({
-      uid: role === "hr" ? "demo-hr-001" : "demo-employee-001",
-      email: role === "hr" ? "james.robertson@company.com" : "sarah.mitchell@company.com",
-      displayName: role === "hr" ? "James Robertson" : "Sarah Mitchell",
-      role,
-    });
-    setLoading(false);
+  const loginAsDemo = async (role: AppRole) => {
+    setLoading(true);
+    try {
+      const demoData = {
+        uid: role === "hr" ? "demo-hr-001" : "demo-employee-001",
+        email: role === "hr" ? "james.robertson@company.com" : "sarah.mitchell@company.com",
+        role,
+      };
+
+      // Get a real JWT from the backend for the demo user
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demoData),
+      });
+
+      if (res.ok) {
+        const { data } = await res.json();
+        sessionStorage.setItem("demo_token", data.token);
+        setIsDemo(true);
+        setUser({
+          uid: demoData.uid,
+          email: demoData.email,
+          displayName: role === "hr" ? "James Robertson" : "Sarah Mitchell",
+          role,
+        });
+      }
+    } catch (error) {
+      console.error("Demo login failed:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const selectRole = async (role: AppRole) => {
     if (!user) return;
 
-    // Persist the role to the backend
-    try {
-      await apiClient("/api/auth/set-role", {
-        method: "POST",
-        body: { uid: user.uid, email: user.email, displayName: user.displayName, role },
-      });
-    } catch {
-      // If backend is down, still set locally
-      console.warn("Failed to persist role to backend — continuing locally");
+    await apiClient("/api/auth/set-role", {
+      method: "POST",
+      body: {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        role,
+      },
+    });
+
+    const currentFirebaseUser = firebaseAuthClient.currentUser;
+    if (currentFirebaseUser) {
+      // Force refresh so the updated custom role claim is included immediately.
+      await currentFirebaseUser.getIdToken(true);
     }
 
-    setUser((prev) => prev ? { ...prev, role } : null);
+    setUser((prev) => (prev ? { ...prev, role } : null));
   };
 
   const logout = async () => {
     setIsDemo(false);
+    sessionStorage.removeItem("demo_token");
     setUser(null);
     try {
       await signOut(firebaseAuthClient);
@@ -141,7 +191,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithEmail, loginWithGoogle, loginAsDemo, selectRole, logout, isDemo }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        loginWithEmail,
+        loginWithGoogle,
+        loginAsDemo,
+        selectRole,
+        logout,
+        isDemo,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

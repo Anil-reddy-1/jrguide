@@ -94,7 +94,7 @@ export const EmployeeHomePage = () => {
                     <p className="text-sm font-medium text-slate-700">{task.title}</p>
                     <p className="text-xs text-slate-400">{task.description}</p>
                   </div>
-                  <StatusBadge variant={task.status === "in_progress" ? "active" : "pending"} label={task.dayLabel ?? task.status} />
+                  <StatusBadge variant={task.status === "in_progress" ? "in_progress" : "pending"} label={task.dayLabel} />
                 </div>
               ))}
             </div>
