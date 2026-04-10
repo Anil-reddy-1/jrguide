@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const BASE_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:4000" : "");
 
 type ApiOptions = {
   method?: string;
@@ -9,6 +9,10 @@ type ApiOptions = {
 
 export const apiClient = async <T = unknown>(path: string, options: ApiOptions = {}): Promise<T> => {
   const { method = "GET", body, headers = {}, formData } = options;
+
+  if (!BASE_URL) {
+    throw new Error("API URL is not configured. Set VITE_API_URL in frontend environment variables.");
+  }
 
   const finalHeaders: Record<string, string> = { ...headers };
 

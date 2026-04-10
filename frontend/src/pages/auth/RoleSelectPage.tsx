@@ -13,12 +13,17 @@ export const RoleSelectPage = () => {
     setSelecting(true);
     try {
       await selectRole(role);
-      toast.success(`Signed in as ${role === "employee" ? "Employee" : "HR Admin"}`);
-      
-    } catch {
-      toast.error("Failed to set role. Please try again.");
-    } finally {
+      toast.success(
+        `Signed in as ${role === "employee" ? "Employee" : "HR Admin"}`,
+      );
       navigate(role === "employee" ? "/employee" : "/hr", { replace: true });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to set role. Please try again.";
+      toast.error(message);
+    } finally {
       setSelecting(false);
     }
   };
@@ -31,9 +36,13 @@ export const RoleSelectPage = () => {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-900 text-white">
             <ShieldCheck size={28} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Choose Your Portal</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Choose Your Portal
+          </h1>
           <p className="mt-2 text-sm text-slate-500">
-            Welcome{user?.displayName ? `, ${user.displayName.split(" ")[0]}` : ""}! Select how you'd like to use JrGuide.
+            Welcome
+            {user?.displayName ? `, ${user.displayName.split(" ")[0]}` : ""}!
+            Select how you'd like to use JrGuide.
           </p>
         </div>
 
@@ -50,12 +59,18 @@ export const RoleSelectPage = () => {
                 <Users size={24} />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-slate-900">Employee Portal</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Employee Portal
+                </h3>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  Complete onboarding tasks, upload documents, and access company resources.
+                  Complete onboarding tasks, upload documents, and access
+                  company resources.
                 </p>
               </div>
-              <ArrowRight size={20} className="text-slate-300 transition-colors group-hover:text-navy-600" />
+              <ArrowRight
+                size={20}
+                className="text-slate-300 transition-colors group-hover:text-navy-600"
+              />
             </div>
           </button>
 
@@ -70,12 +85,18 @@ export const RoleSelectPage = () => {
                 <ShieldCheck size={24} />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-slate-900">HR Admin</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  HR Admin
+                </h3>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  Manage employees, templates, FAQs, and monitor onboarding progress.
+                  Manage employees, templates, FAQs, and monitor onboarding
+                  progress.
                 </p>
               </div>
-              <ArrowRight size={20} className="text-slate-300 transition-colors group-hover:text-emerald-600" />
+              <ArrowRight
+                size={20}
+                className="text-slate-300 transition-colors group-hover:text-emerald-600"
+              />
             </div>
           </button>
         </div>

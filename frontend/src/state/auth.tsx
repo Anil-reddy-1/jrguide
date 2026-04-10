@@ -56,41 +56,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (firebaseUser) {
           // Try to fetch the user's profile from the backend
           try {
-            const token = await firebaseUser.getIdToken();
-            const res = await fetch(
-              `${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/employees/me`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              },
-            );
-
-            if (res.ok) {
-              const body = await res.json();
-              const profile = body.data;
-              setUser({
-                uid: firebaseUser.uid,
-                email: firebaseUser.email ?? "",
-                displayName:
-                  profile?.displayName ??
-                  firebaseUser.displayName ??
-                  firebaseUser.email?.split("@")[0] ??
-                  "",
-                role: profile?.role ?? null,
-              });
-            } else {
-              // User exists in Firebase but not in our Firestore — needs role selection
-              setUser({
-                uid: firebaseUser.uid,
-                email: firebaseUser.email ?? "",
-                displayName:
-                  firebaseUser.displayName ??
-                  firebaseUser.email?.split("@")[0] ??
-                  "",
-                role: null,
-              });
-            }
+            const profile = await apiClient<{
+              displayName?: string;
+              role?: AppRole | null;
+            } | null>("/api/employees/me");
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email ?? "",
+              displayName:
+                profile?.displayName ??
+                firebaseUser.displayName ??
+                firebaseUser.email?.split("@")[0] ??
+                "",
+              role: profile?.role ?? null,
+            });
           } catch {
-            // Backend unavailable — still let the user proceed to role selection
+            const tokenResult = await firebaseUser.getIdTokenResult();
+            const claimRole = tokenResult.claims.role;
+            const resolvedRole =
+              claimRole === "employee" ||
+              claimRole === "hr" ||
+              claimRole === "admin"
+                ? claimRole
+                : null;
+
+            // Backend unavailable — fall back to token claim when available.
             setUser({
               uid: firebaseUser.uid,
               email: firebaseUser.email ?? "",
@@ -98,7 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 firebaseUser.displayName ??
                 firebaseUser.email?.split("@")[0] ??
                 "",
-              role: null,
+              role: resolvedRole,
             });
           }
         } else if (!isDemo) {
@@ -128,28 +118,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const demoData = {
         uid: role === "hr" ? "demo-hr-001" : "demo-employee-001",
-        email: role === "hr" ? "james.robertson@company.com" : "sarah.mitchell@company.com",
+        email:
+          role === "hr"
+            ? "james.robertson@company.com"
+            : "sarah.mitchell@company.com",
         role,
       };
 
-      // Get a real JWT from the backend for the demo user
-      const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/auth/login`, {
+      const tokenData = await apiClient<{ token: string }>("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(demoData),
+        body: demoData,
       });
 
-      if (res.ok) {
-        const { data } = await res.json();
-        sessionStorage.setItem("demo_token", data.token);
-        setIsDemo(true);
-        setUser({
-          uid: demoData.uid,
-          email: demoData.email,
-          displayName: role === "hr" ? "James Robertson" : "Sarah Mitchell",
-          role,
-        });
-      }
+      sessionStorage.setItem("demo_token", tokenData.token);
+      setIsDemo(true);
+      setUser({
+        uid: demoData.uid,
+        email: demoData.email,
+        displayName: role === "hr" ? "James Robertson" : "Sarah Mitchell",
+        role,
+      });
     } catch (error) {
       console.error("Demo login failed:", error);
     } finally {
