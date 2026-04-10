@@ -148,15 +148,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const selectRole = async (role: AppRole) => {
     if (!user) return;
 
-    await apiClient("/api/auth/set-role", {
-      method: "POST",
-      body: {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        role,
-      },
-    });
+    try {
+      await apiClient("/api/auth/set-role", {
+        method: "POST",
+        body: {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          role,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+
+      // Recovery path: role may already be assigned server-side from a previous session.
+      if (message.toLowerCase().includes("already assigned")) {
+        const profile = await apiClient<{
+          role?: AppRole | null;
+          displayName?: string;
+        } | null>("/api/employees/me");
+        const resolvedRole = profile?.role;
+        if (
+          resolvedRole === "employee" ||
+          resolvedRole === "hr" ||
+          resolvedRole === "admin"
+        ) {
+          setUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  role: resolvedRole,
+                  displayName: profile?.displayName ?? prev.displayName,
+                }
+              : null,
+          );
+          return;
+        }
+      }
+
+      throw error;
+    }
 
     const currentFirebaseUser = firebaseAuthClient.currentUser;
     if (currentFirebaseUser) {
