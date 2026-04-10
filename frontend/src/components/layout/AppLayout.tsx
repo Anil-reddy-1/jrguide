@@ -31,12 +31,24 @@ type NavItem = {
 
 const employeeNav: NavItem[] = [
   { to: "/employee", label: "Dashboard", icon: <Home size={18} /> },
-  { to: "/employee/checklist", label: "My Tasks", icon: <CheckSquare size={18} /> },
-  { to: "/employee/documents", label: "Documents", icon: <FileText size={18} /> },
+  {
+    to: "/employee/checklist",
+    label: "My Tasks",
+    icon: <CheckSquare size={18} />,
+  },
+  {
+    to: "/employee/documents",
+    label: "Documents",
+    icon: <FileText size={18} />,
+  },
   { to: "/employee/faq", label: "FAQs", icon: <HelpCircle size={18} /> },
   { to: "/employee/chat", label: "Chatbot", icon: <MessageCircle size={18} /> },
   { to: "/employee/contacts", label: "Contacts", icon: <Users size={18} /> },
-  { to: "/employee/notifications", label: "Notifications", icon: <Bell size={18} /> },
+  {
+    to: "/employee/notifications",
+    label: "Notifications",
+    icon: <Bell size={18} />,
+  },
 ];
 
 const hrNav: NavItem[] = [
@@ -132,11 +144,11 @@ export const AppLayout = () => {
         <div className="border-t border-slate-100 p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-100 text-sm font-bold text-navy-700">
-              {user?.name?.charAt(0) ?? "U"}
+              {user?.displayName?.charAt(0) ?? "U"}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-slate-800">
-                {user?.name}
+                {user?.displayName}
               </p>
               <p className="truncate text-xs text-slate-500">{user?.email}</p>
             </div>
@@ -180,7 +192,10 @@ export const AppLayout = () => {
 
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-sm text-slate-500 sm:block">
-              Welcome, <span className="font-semibold text-slate-700">{user?.name?.split(" ")[0]}</span>
+              Welcome,{" "}
+              <span className="font-semibold text-slate-700">
+                {user?.displayName?.split(" ")[0]}
+              </span>
             </span>
           </div>
         </header>
