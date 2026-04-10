@@ -14,10 +14,11 @@ export const RoleSelectPage = () => {
     try {
       await selectRole(role);
       toast.success(`Signed in as ${role === "employee" ? "Employee" : "HR Admin"}`);
-      navigate(role === "employee" ? "/employee" : "/hr", { replace: true });
+      
     } catch {
       toast.error("Failed to set role. Please try again.");
     } finally {
+      navigate(role === "employee" ? "/employee" : "/hr", { replace: true });
       setSelecting(false);
     }
   };

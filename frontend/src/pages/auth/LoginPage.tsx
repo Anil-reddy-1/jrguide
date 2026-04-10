@@ -32,7 +32,7 @@ export const LoginPage = () => {
       // onAuthStateChanged will update user state and the effect above handles redirect.
     } catch (err: any) {
       toast.error(err.message ?? "Login failed");
-    } finally {
+    } finally { 
       setIsSubmitting(false);
     }
   };
