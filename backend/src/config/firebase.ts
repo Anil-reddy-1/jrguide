@@ -12,6 +12,8 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { env } from "./env.js";
 
+const normalizeBucketName = (bucketName: string) => bucketName.replace(/^gs:\/\//, "").replace(/\/+$/, "");
+
 const resolveFirebaseCredential = () => {
   if (env.FIREBASE_SERVICE_ACCOUNT_PATH) {
     const serviceAccountPath = resolve(process.cwd(), env.FIREBASE_SERVICE_ACCOUNT_PATH);
@@ -35,9 +37,10 @@ const resolveFirebaseCredential = () => {
 const app = getApps()[0] ?? initializeApp({
   credential: resolveFirebaseCredential(),
   projectId: env.FIREBASE_PROJECT_ID,
-  storageBucket: env.FIREBASE_STORAGE_BUCKET,
+  storageBucket: normalizeBucketName(env.FIREBASE_STORAGE_BUCKET),
 });
 
 export const firebaseAuth = getAuth(app);
 export const firestore = getFirestore(app);
-export const storage = getStorage(app).bucket();
+export const storageBucketName = normalizeBucketName(env.FIREBASE_STORAGE_BUCKET);
+export const storage = getStorage(app).bucket(storageBucketName);
